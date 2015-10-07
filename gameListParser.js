@@ -1,12 +1,8 @@
 var fs = require('fs');
 
-var BYTES_IN_KB = 1024;
-var BYTES_IN_MB = 1024 * BYTES_IN_KB;
-var BYTES_IN_GB = 1024 * BYTES_IN_MB;
-
 var SORT =
-'size';
-//'numDVDs';
+//'size';
+'numDisks';
 //'name';
 
 var SIZE_DISPLAY =
@@ -17,14 +13,37 @@ var SIZE_DISPLAY =
 //'kbs';
 //'bytes';
 
-var BYTES_IN_UNITS = {
+
+var MAX_NUM_DISKS_PER_GAME = 2;
+
+var BYTES_IN_KB = 1024;
+var BYTES_IN_MB = 1024 * BYTES_IN_KB;
+var BYTES_IN_GB = 1024 * BYTES_IN_MB;
+
+var BYTES_BY_UNIT = {
   kb: BYTES_IN_KB,
   mb: BYTES_IN_MB,
   gb: BYTES_IN_GB
 };
 
-var BYTES_IN_DVD    = 4.7 * BYTES_IN_GB;
-var BYTES_IN_DL_DVD = 8.5 * BYTES_IN_GB;
+var DISK_TYPES = {
+  DVD: {
+    name: 'SL',
+    sizeBytes: 4.7 * BYTES_IN_GB
+  },
+  /*DL_DVD: {
+    name: 'DL',
+    sizeBytes: 8.5 * BYTES_IN_GB
+  },*/
+  BLU_RAY_DVD: {
+    name: 'BR',
+    sizeBytes: 25 * BYTES_IN_GB
+  },
+  DL_BLU_RAY_DVD: {
+    name: 'DL BR',
+    sizeBytes: 50 * BYTES_IN_GB
+  }
+};
 
 
 function numBytesToSizeString(numBytes) {
@@ -38,7 +57,7 @@ function numBytesToSizeString(numBytes) {
     return (numBytes / BYTES_IN_KB).toFixed(2) + ' KB';
   }
   
-  return numBytes + 'Bytes';
+  return numBytes + ' B';
 }
 
 function readGameList(gameListFilepath, cb) {
@@ -47,7 +66,7 @@ function readGameList(gameListFilepath, cb) {
       return cb(err);
     }
     
-    var regex = /^(?!#)\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(([\d\.]+)([kmg]b))\s*$/gmi;
+    var regex = /^(?!#)\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(([\d\.]+)([kmg]b))\s*\|\s*(x?)\s*$/gmi;
     
     var games = [];
     var results;
@@ -57,126 +76,181 @@ function readGameList(gameListFilepath, cb) {
       var origSizeStr = results[3];
       var size        = parseFloat(results[4]);
       var sizeUnit    = results[5].toLowerCase();
+	    var backedUp    = results[6]? true : false;
       
-      var bytesInUnit = BYTES_IN_UNITS[sizeUnit];
+      var bytesInUnit = BYTES_BY_UNIT[sizeUnit];
       var sizeBytes = Math.ceil(size * bytesInUnit);
-      var sizeStr   = numBytesToSizeString(sizeBytes);
       
-      var numDVDs = Math.ceil(sizeBytes / BYTES_IN_DVD);
+      // chose the correct disk type for this size
+      var diskType;
+      var numDisks;
+      
+      for (var key in DISK_TYPES) {
+        diskType = DISK_TYPES[key];
+        numDisks = Math.ceil(sizeBytes / diskType.sizeBytes);
+        
+        if (numDisks <= MAX_NUM_DISKS_PER_GAME) {
+          break;
+        }
+      }
       
       games.push({
         title      : title,
         platform   : platform,
         origSizeStr: origSizeStr,
         sizeBytes  : sizeBytes,
-        sizeStr    : sizeStr,
-        numDVDs    : numDVDs
+        diskType   : diskType,
+        numDisks   : numDisks,
+        backedUp   : backedUp
       });
-    }
-    
-    switch(SORT) {
-      case 'size':
-        games.sort(function(a, b) {
-          return b.sizeBytes - a.sizeBytes;
-        });
-        break;
-      
-      case 'numDVDs':
-        games.sort(function(a, b) {
-          var c = b.numDVDs - a.numDVDs;
-          if (c === 0) {
-              c = a.title.localeCompare(b.title);
-          }
-          
-          return c;
-        });
-        break;
-      
-      default:
-        games.sort(function(a, b) {
-          return a.title.localeCompare(b.title);
-        });
-        break;
     }
     
     return cb(null, games);
   });
 }
 
+function sortGameList(games) {
+  if (SORT === 'size') {
+    games.sort(function(a, b) {
+      return a.sizeBytes - b.sizeBytes;
+    });
+  }
+  else if (SORT === 'numDisks') {
+    games.sort(function(a, b) {
+      // put larger disk types first
+      var c = a.diskType.sizeBytes - b.diskType.sizeBytes;
+      if (c !== 0) {
+        return c;
+      }
+      
+      c = a.numDisks - b.numDisks;
+      if (c !== 0) {
+        return c;
+      }
+      
+      return a.title.localeCompare(b.title);
+    });
+  }
+  else {
+    games.sort(function(a, b) {
+      return a.title.localeCompare(b.title);
+    });
+  }
+}
+
 function calculateStats(games) {
-  var totalSizeBytes = 0;
-  var totalNumDVDs = 0;
+  var totalSizeBytes   = 0;
+  var numGamesBackedUp = 0;
+  var totalNumDisks = 0;
   
-  // number of games that require a certain number of DVDs. Ex:
+  // total number of disks for each disk type. Ex:
   // {
-  //   numDVDsPerGame: 1,
-  //   games: [...]
+  //   diskType: DISK_TYPES.DVD,
+  //   totalNumDisks: 123
   // },
   // {
-  //   numDVDsPerGame: 2,
-  //   numGames: [...]
-  // },
-  // {
-  //   numDVDsPerGame: 3,
-  //   numGames: [...]
+  //   diskType: DISK_TYPES.DL_DVD,
+  //   totalNumDisks: 24
   // }
-  var gamesByNumDVDs = [];
+  var totalNumDisksByType = [];
+  
+  // number of games that require a certain number of disk. Ex:
+  // {
+  //   numDisksPerGame: 1,
+  //   numGames: 123
+  // },
+  // {
+  //   numDisksPerGame: 2,
+  //   numGames: 42
+  // },
+  // {
+  //   numDisksPerGame: 3,
+  //   numGames: 11
+  // }
+  var numGamesByNumDisksPerGame = [];
+  
   
   for (var i = 0; i < games.length; ++i) {
     totalSizeBytes += games[i].sizeBytes;
-    totalNumDVDs += games[i].numDVDs;
+    totalNumDisks += games[i].numDisks;
     
-    // add this game ot the list of games with $games[i].numDVDs DVDs
+    // add this game's number of disks to the total number of disks of type $games[i].diskType
     var index = -1;
-    for (var j = 0; j < gamesByNumDVDs.length; ++j) {
-      if (gamesByNumDVDs[j].numDVDsPerGame === games[i].numDVDs) {
+    for (var j = 0; j < totalNumDisksByType.length; ++j) {
+      if (totalNumDisksByType[j].diskType === games[i].diskType) {
         index = j;
         break;
       }
     }
     
     if (index === -1) {
-      gamesByNumDVDs.push({
-        numDVDsPerGame: games[i].numDVDs,
-        games         : [games[i]]
+      totalNumDisksByType.push({
+        diskType     : games[i].diskType,
+        totalNumDisks: games[i].numDisks
       });
     }
     else {
-      gamesByNumDVDs[index].games.push(games[i]);
+      totalNumDisksByType[index].totalNumDisks += games[i].numDisks;
+    }
+    
+    // add this game to the number of games with $games[i].numDisks disks
+    index = -1;
+    for (var j = 0; j < numGamesByNumDisksPerGame.length; ++j) {
+      if (numGamesByNumDisksPerGame[j].numDisksPerGame === games[i].numDisks) {
+        index = j;
+        break;
+      }
+    }
+    
+    if (index === -1) {
+      numGamesByNumDisksPerGame.push({
+        numDisksPerGame: games[i].numDisks,
+        numGames       : 1
+      });
+    }
+    else {
+      ++numGamesByNumDisksPerGame[index].numGames;
+    }
+    
+    // if this game has been backed up, add it to the total number of backed up games
+    if (games[i].backedUp) {
+      ++numGamesBackedUp;
     }
   }
   
-  gamesByNumDVDs.sort(function(a, b) {
-    return b.numDVDsPerGame - a.numDVDsPerGame;
-  });
-  
   return {
-    totalSizeBytes: totalSizeBytes,
-    totalNumDVDs  : totalNumDVDs,
-    gamesByNumDVDs: gamesByNumDVDs
+    totalSizeBytes           : totalSizeBytes,
+    totalNumDisks            : totalNumDisks,
+    totalNumDisksByType      : totalNumDisksByType,
+    numGamesByNumDisksPerGame: numGamesByNumDisksPerGame,
+	  numGamesBackedUp         : numGamesBackedUp
   };
 }
 
 function logGameList(games) {
   var columns = [
     {
-      key   : 'title',
-      header: 'Title'
+      header: 'Title',
+      getValue: function(game) {return game.title;}
     },
     {
-      key   : 'platform',
-      header: 'Platform'
+      header: 'Platform',
+      getValue: function(game) {return game.platform;}
     },
     {
-      key   : SIZE_DISPLAY === 'original'? 'origSizeStr' : 'sizeStr',
       header: 'Size',
-      alignRight: true
+      alignRight: true,
+      getValue: function(game) {return SIZE_DISPLAY === 'original'? game.origSizeStr : numBytesToSizeString(game.sizeBytes);}
     },
     {
-      key   : 'numDVDs',
-      header: 'DVDs',
-      alignRight: true
-    }
+      header: 'Disks',
+      alignRight: true,
+      getValue: function(game) {return game.numDisks + ' ' + game.diskType.name;}
+    },
+    {
+      header: 'Backed Up',
+      getValue: function(game) {return game.backedUp? 'X' : '';}
+    },
   ];
   
   for (var i = 0; i < columns.length; ++i) {
@@ -186,7 +260,7 @@ function logGameList(games) {
   
   for (var i = 0; i < games.length; ++i) {
     for (var j = 0; j < columns.length; ++j) {
-      var value = games[i][columns[j].key];
+      var value = columns[j].getValue(games[i]);
       var str = typeof value === 'string'? value : JSON.stringify(value) || '';
       
       if (str.length > columns[j].length) {
@@ -218,7 +292,7 @@ function logGameList(games) {
         rowStr += ' | ';
       }
       
-      var value = games[i][columns[j].key];
+      var value = columns[j].getValue(games[i]);
       var str = typeof value === 'string'? value : JSON.stringify(value) || '';
       
       rowStr += padStr(str, columns[j].length, ' ', columns[j].alignRight);
@@ -256,25 +330,51 @@ function padStr(str, targetLength, padStr, alignRight) {
       process.exit(1);
     }
     
+    // sort game list
+    sortGameList(games);
+    
     // calculate stats
     var stats = calculateStats(games);
+    
+    // sort the total number of disks by type
+    stats.totalNumDisksByType.sort(function(a, b) {
+      return a.diskType.sizeBytes - b.diskType.sizeBytes;
+    });
+    
+    // sort the number of games by the number if disks per game
+    stats.numGamesByNumDisksPerGame.sort(function(a, b) {
+      return a.numDisksPerGame - b.numDisksPerGame;
+    });
     
     // report
     logGameList(games);
     
     console.log('');
     console.log('Read ' + games.length + ' games.');
-    console.log('Total size: ' + numBytesToSizeString(stats.totalSizeBytes));
-    console.log('Total DVDs: ' + stats.totalNumDVDs);
+    console.log('Total size     : ' + numBytesToSizeString(stats.totalSizeBytes));
+    console.log('Total num Disks: ' + stats.totalNumDisks);
     
-    for (var i = 0; i < stats.gamesByNumDVDs.length; ++i) {
+    console.log('');
+    for (var i = 0; i < stats.totalNumDisksByType.length; ++i) {
       console.log(
-        'Games with ' +
-        stats.gamesByNumDVDs[i].numDVDsPerGame +
-        ' DVDs: ' +
-        stats.gamesByNumDVDs[i].games.length
+        'Total num ' + stats.totalNumDisksByType[i].diskType.name + 's: ' +
+        stats.totalNumDisksByType[i].totalNumDisks
       );
     }
+    
+    console.log('');
+    for (var i = 0; i < stats.numGamesByNumDisksPerGame.length; ++i) {
+      console.log(
+        'Games with ' +
+        stats.numGamesByNumDisksPerGame[i].numDisksPerGame + ' Disk' +
+        (stats.numGamesByNumDisksPerGame[i].numDisksPerGame !== 1? 's' : ' ') + ': ' +
+        stats.numGamesByNumDisksPerGame[i].numGames
+      );
+    }
+	
+	console.log('');
+	console.log('Games Backed Up: ' + stats.numGamesBackedUp);
+	console.log('Games Not Backed Up: ' + (games.length - stats.numGamesBackedUp));
     
     process.exit(0);
   });
