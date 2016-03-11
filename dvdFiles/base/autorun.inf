@@ -1,0 +1,4 @@
+[autorun]
+shellexecute=autorun.vbs
+icon=braid.ico
+label=Braid

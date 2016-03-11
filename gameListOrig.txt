@@ -79,6 +79,9 @@ Lost Planet 3                                   | Steam | 15680MB
 LUFTRAUSERS                                     | Steam | 96MB
 Mafia II                                        | Steam | 15680MB
 Mass Effect 2                                   | Steam | 11822MB
+METAL SLUG                                      | Steam | 91MB
+METAL SLUG 3                                    | Steam | 254MB
+METAL SLUG X                                    | Steam | 229MB
 Metro 2033                                      | Steam | 7546MB
 Mind: Path to To Thalamus                       | Steam | 2289MB
 Papers, Please                                  | Steam | 41MB

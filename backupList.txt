@@ -1,0 +1,77 @@
+Print offset: Top: -0.625 Left: -0.125
+
+Title                                         | Platform
+----------------------------------------------|----------
+Half-Life 2                                   | Steam
+Half-Life                                     | Steam
+Age of Empires II: HD Edition                 | Steam
+Braid                                         | PC
+Diablo II                                     | PC
+Diablo II: Lord of Destruction                | PC
+Portal                                        | Steam
+FEZ                                           | Steam
+FlatOut 2                                     | Steam
+Garry's Mod                                   | Steam
+Counter-Strike: Source                        | Steam
+LUFTRAUSERS                                   | Steam
+The Elder Scrolls IV: Oblivion                | PC
+Papers, Please                                | Steam
+Point Perfect                                 | Steam
+RollerCoaster Tycoon 3: Platinum!             | Steam
+StarCraft                                     | PC
+StarCraft: BroodWar                           | PC
+Terraria                                      | Steam
+The Binding of Isaac                          | Steam
+The Binding of Issac Rebirth                  | Steam
+The Fall                                      | Steam
+The Swapper                                   | Steam
+TrackMania2 Canyon                            | Steam
+TrackMania2 Stadium                           | Steam
+Valiant Hearts: The Great War                 | Steam
+World of Goo                                  | PC
+Assassin's Creed                              | PC
+Assassin's Creed II                           | PC
+Assassin's Creed: Brotherhood                 | PC
+Assassin's Creed Revelations                  | Steam
+Assassin's Creed 3                            | PC
+BioShock                                      | Steam
+Call of Duty 4: Modern Warfare                | PC
+Call of Duty: World at War                    | PC
+Cosmic DJ                                     | Steam
+Crysis                                        | PC
+Crysis Warhead                                | PC
+Crysis 2                                      | PC
+Dear Esther                                   | Steam
+Dishonored                                    | PC
+Doom                                          | DOS
+F.E.A.R                                       | Steam
+F.E.A.R. 2: Reborn                            | Steam
+F.E.A.R. 3                                    | Steam
+F.E.A.R. Extraction Point                     | Steam
+F.E.A.R. Perseus Mandate                      | Steam
+Fallout 3                                     | Steam
+Fallout: New Vegas                            | Steam
+Far Cry                                       | Steam
+Far Cry 2                                     | Steam
+Goat Simulator                                | Steam
+Grand Theft Auto                              | PC
+Grand Theft Auto II                           | PC
+Grand Theft Auto III                          | PC
+Grand Theft Auto: Vice City                   | PC
+Grand Theft Auto: San Andreas                 | PC
+GRID                                          | PC
+Grim Fandango Remastered                      | Steam
+Gunpoint                                      | Steam
+Half-Life 2: Deathmatch                       | Steam
+Half-Life 2: Episode One                      | Steam
+Half-Life 2: Episode Two                      | Steam
+Half-Life 2: Lost Coast                       | Steam
+Half-Life: Blue Shift                         | Steam
+Half-Life: Opposing Force                     | Steam
+Home                                          | Steam
+Amnesia: The Dark Descent                     | Steam
+Among the Sleep                               | Steam
+Apeture Tag: The Paint Gun Testing Initiative | Steam
+Diablo                                        | PC
+Diablo: Hellfire                              | PC
+Dustforce                                     | Steam

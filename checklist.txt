@@ -1,0 +1,25 @@
+Print
+- correct banner
+- correct ESRB rating
+- correct ESRB descriptors
+- no gaps
+- check spelling
+
+
+Disks
+- autorun (NO) action
+- autorun icon
+- autorun label
+- autorun correct disk number
+
+- readme title
+- readme correct disk number
+- readme steps
+
+- icon
+- box art
+
+Burn
+- correct type
+- labels
+- correct disk number
